@@ -1,73 +1,133 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Secret Santa Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This is the backend service for the Secret Santa game, built using **NestJS** and **PostgreSQL**. The API allows users to upload employee lists, assign Secret Santa pairings, and download the assignments.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
 
-## Description
+- Upload employees via CSV
+- Assign Secret Santa participants
+- Export assigned Santa data as CSV
+- Docker support for containerized deployment
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Prerequisites
+
+- **Node.js** (>= 18.x)
+- **Docker & Docker Compose** (for containerized setup)
+- **PostgreSQL** (if running without Docker)
 
 ## Installation
 
-```bash
-$ npm install
+### Running Locally
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/sasic-dev/secretsanta-api.git
+   cd secretsanta-api
+   ```
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+3. Configure environment variables:
+   Create a `.env` file in the root directory and set the following values:
+   ```env
+      PORT=6060
+      APP_NAME=SecretSantaApp
+      DB_HOST=localhost
+      DB_PORT=5432
+      DB_USER=usename
+      DB_PASSWORD=password
+      DB_NAME=database_name
+   ```
+4. Run database migrations (if using Prisma or TypeORM):
+   ```sh
+   npm run migrate
+   ```
+5. Start the server:
+   ```sh
+   npm run start:dev
+   ```
+
+### Running with Docker
+
+1. Ensure Docker and Docker Compose are installed.
+2. Build and start the containers:
+   ```sh
+   docker-compose up --build
+   ```
+3. Run migrations:
+   ```sh
+   docker-compose exec santaapp_api npm run typeorm:migration:run
+   ```
+4. The backend should be running on `http://localhost:<PORT>`
+
+## API Endpoints
+
+- `POST /employees/import` - Upload employee list as CSV
+- `POST /assignments/generate` - Generate Secret Santa assignments
+- `GET /assignments/export` - Download assignments as CSV
+
+## CORS Configuration
+
+CORS is enabled in `main.ts`:
+
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+  });
+  await app.listen(process.env.PORT || 6060);
+}
+bootstrap();
 ```
 
-## Running the app
+## Database Management
 
-```bash
-# development
-$ npm run start
+### Empty a Table in PostgreSQL
 
-# watch mode
-$ npm run start:dev
+To delete all records in the `employees` table:
 
-# production mode
-$ npm run start:prod
+1. Access the PostgreSQL database inside the Docker container:
+
+   ```sh
+   docker-compose exec santaapp_db psql -U ${DB_USER} -d ${DB_NAME}
+   ```
+
+2. To empty the `employees` table, execute the following command:
+
+   ```sql
+   TRUNCATE TABLE employees;
+   ```
+
+3. To reset auto-increment ID:
+
+   ```sql
+   TRUNCATE TABLE employees RESTART IDENTITY;
+   ```
+
+4. To delete all records in the `assignments` table:
+   ```sql
+   TRUNCATE TABLE assignments;
+   ```
+5. To get all records in the `employees` table, execute the following command:
+   ```sql
+   SELECT * FROM employees;
+   ```
+6. To get all records in the `assignments` table, execute the following command:
+   ```sql
+   SELECT * FROM assignments;
+   ```
+
 ```
 
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Contributing
+Feel free to fork and contribute! Open an issue for discussions.
 
 ## License
+MIT
 
-Nest is [MIT licensed](LICENSE).
+```
